@@ -16,14 +16,16 @@ with open("config.json", "r") as config_file:
 
 
 
-def get_thordata_url(url, location="us"):
-    payload = {
-        "api_key": API_KEY,
-        "url": url,
-        "country": location,
-        }
-    proxy_url = "https://api.thordata.io/api/v1/proxy?" + urlencode(payload)
-    return proxy_url
+def get_thordata_proxy(location="us"):
+    """
+    Returns proxy configuration for ThorData.
+    API_KEY should be in format: USERNAME:PASSWORD
+    """
+    proxy_url = f"https://td-customer-{API_KEY}@t.pr.thordata.net:9999"
+    return {
+        "http": proxy_url,
+        "https": proxy_url
+    }
 
 
 ## Logging
@@ -141,8 +143,8 @@ def scrape_search_results(keyword, location, page_number, data_pipeline=None, re
     
     while tries <= retries and not success:
         try:
-            thordata_proxy_url = get_thordata_url(url, location=location)
-            response = requests.get(thordata_proxy_url)
+            proxies = get_thordata_proxy(location=location)
+            response = requests.get(url, proxies=proxies)
             logger.info(f"Recieved [{response.status_code}] from: {url}")
             if response.status_code == 200:
                 success = True
@@ -211,7 +213,8 @@ def process_business(row, location, retries=3):
     success = False
 
     while tries <= retries and not success:
-        response = requests.get(get_thordata_url(url, location=location))
+        proxies = get_thordata_proxy(location=location)
+        response = requests.get(url, proxies=proxies)
         try:
             if response.status_code == 200:
                 logger.info(f"Status: {response.status_code}")
